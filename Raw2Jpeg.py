@@ -89,7 +89,7 @@ class Raw2Jpeg(Passthrough):
             if exception.errno != errno.EEXIST:
                 raise
 
-        path="%s/%s.dng"%(self.THUMBDIR,os.path.basename(preview))
+        path="%s/%s.dng"%(THUMBDIR,os.path.basename(preview))
         os.link(origpath, path)
         
         # Se guarda como path-preview3.tif
