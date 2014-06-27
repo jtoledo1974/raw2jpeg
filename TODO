@@ -1,1 +1,5 @@
 Check that exiv2 is installed
+
+Currently just uses the first jpeg available in the third preview.
+Apparently when the DNG is created with full size previews the usable
+jpg is the third jpeg embedded in the fourth tiff preview
