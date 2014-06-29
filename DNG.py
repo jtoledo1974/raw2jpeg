@@ -2,10 +2,33 @@
 # -*- coding: utf-8 -*-
 import sys
 import errno
-import logging
 from struct import unpack
 
 
+class Logging:
+    CRITICAL = 50
+    ERROR = 40
+    WARNING = 30
+    INFO = 20
+    DEBUG = 10
+
+    def __init__(self):
+        self.level = 0
+        for levelname in ['critical', 'error', 'warning', 'info', 'debug']:
+            level = Logging.__dict__[levelname.upper()]
+
+            def f(string):
+                if level > self.level:
+                    self.log(string)
+            setattr(self, levelname, f)
+
+    def basicConfig(self, level):
+        self.level = level
+
+    def log(self, string):
+        print(string)
+
+logging = Logging()
 logging.basicConfig(level=logging.ERROR)
 
 BYTE = 1
