@@ -127,16 +127,21 @@ class IFD(object):
         n_tags = dng.read_short()
         self.entries = {}
 
-        while n_tags:
-            tag = dng.read_short()
-            type = dng.read_short()
-            count = dng.read_long()
-            value = dng.read_long()
+        buf = dng.read(n_tags*12)
+        shortf = dng.shortf
+        longf = dng.longf
+        n = 0
+        while n < n_tags:
+            o = n*12
+            tag = unpack(shortf, buf[o:o+2])[0]
+            type = unpack(shortf, buf[o+2:o+4])[0]
+            count = unpack(longf, buf[o+4:o+8])[0]
+            value = unpack(longf, buf[o+8:o+12])[0]
             tag_obj = Tag(tag, type, count, value)
             tag_obj.value_is_checked = False
             tag_name = tag_obj.tag_name()
             self.entries[tag_name] = tag_obj
-            n_tags -= 1
+            n += 1
 
         self.next = dng.read_long()
 
@@ -197,6 +202,9 @@ class DNG:
     def seek(self, offset):
         self.f.seek(offset)
 
+    def read(self, count):
+        return self.f.read(count)
+
     def read_short(self):
         # buf = self.f.read(2)
         # print "Hex buf %s" % buf.encode('hex')
@@ -241,9 +249,9 @@ class DNG:
     def __del__(self):
         try:
             self.f.close()
+            del self.f
         except:
             pass
-        del self.f
 
     def get_images(self):
         res = []
