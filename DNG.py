@@ -26,20 +26,20 @@ class Tag:
     types = {BYTE: 1, SHORT: 2, LONG: 4}
 
     def tag_name(self, tag_number):
-        if not hasattr(Tag, 'tag_names'):
-            Tag.tag_dict = {number: tag_name for tag_name, number
-                            in Tag.__dict__.iteritems()
-                            if type(number) == int}
         if tag_number not in Tag.tag_dict:
             return str(tag_number)
         else:
             return Tag.tag_dict[tag_number]
 
-    def __init__(self, tag, type, count, value):
+    def __init__(self, tag, tag_type, count, value):
         self.tag = tag
-        self.type = type
+        self.type = tag_type
         self.count = count
         self.value = value
+        if not hasattr(Tag, 'tag_names'):
+            Tag.tag_dict = {number: tag_name for tag_name, number
+                            in Tag.__dict__.iteritems()
+                            if type(number) == int}
 
     def unsupported(self):
         logging.warning(
