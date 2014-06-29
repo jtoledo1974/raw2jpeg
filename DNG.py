@@ -59,10 +59,6 @@ class Tag:
         self.type = tag_type
         self.count = count
         self.value = value
-        if not hasattr(Tag, 'tag_names'):
-            Tag.tag_dict = {number: tag_name for tag_name, number
-                            in Tag.__dict__.iteritems()
-                            if type(number) == int}
 
     def unsupported(self):
         logging.warning(
@@ -99,6 +95,10 @@ class Tag:
 
     def __str__(self):
         return "Tag %s: %s" % (self.tag_name(self.tag), self.value)
+
+Tag.tag_dict = {number: tag_name for tag_name, number
+                in Tag.__dict__.iteritems()
+                if type(number) == int}
 
 
 class DNG:
