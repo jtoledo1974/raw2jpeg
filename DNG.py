@@ -250,18 +250,25 @@ class DNG:
             except:
                 pass
             ifd.next and ifdo_list.append(ifd.next)
+        res.sort(cmp=lambda x, y: cmp(x.ImageWidth*x.ImageLength,
+                                      y.ImageWidth*y.ImageLength))
         return res
 
     def get_previews(self):
         return [i for i in self.get_images() if i.SubFileType == 1]
 
+    def get_jpeg_previews(self):
+        return [i for i in self.get_previews() if i.Compression == 7]
+
 
 if __name__ == '__main__':
     # from pprint import pprint
 
-    dng = DNG("test2.dng")
+    # dng = DNG("test2.dng")
     # entries, next_ifdo = dng.read_directory()
     # pprint({k: str(v) for k, v in entries.iteritems()})
     # print next_ifdo
-    for p in dng.get_images():
-        print str(p)
+    # for p in dng.get_jpeg_previews():
+    #     print str(p)
+    print DNG("test2.dng").get_jpeg_previews()[-1].StripByteCounts
+    print "hola"
