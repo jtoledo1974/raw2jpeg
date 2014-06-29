@@ -6,6 +6,8 @@ import logging
 from struct import unpack
 
 
+logging.basicConfig(level=logging.ERROR)
+
 BYTE = 1
 ASCII = 2
 SHORT = 2
@@ -14,7 +16,24 @@ LONG = 4
 
 class Tag:
 
+    SubFileType = 254
+    ImageWidth = 256
+    ImageLength = 257
+    Compression = 259
+    Orientation = 274
+    SubIFD = 330
+
     types = {BYTE: 1, SHORT: 2, LONG: 4}
+
+    def tag_name(self, tag_number):
+        if not hasattr(Tag, 'tag_names'):
+            Tag.tag_dict = {number: tag_name for tag_name, number
+                            in Tag.__dict__.iteritems()
+                            if type(number) == int}
+        if tag_number not in Tag.tag_dict:
+            return str(tag_number)
+        else:
+            return Tag.tag_dict[tag_number]
 
     def __init__(self, tag, type, count, value):
         self.tag = tag
@@ -24,7 +43,8 @@ class Tag:
 
     def unsupported(self):
         logging.warning(
-            "Unsupported type %d for tag %d" % (self.type, self.tag))
+            "Unsupported type %d for tag %s" % (
+                self.type, self.tag_name(self.tag)))
 
     def read_value(self, dng):
         # if self.tag == 330:
@@ -58,7 +78,7 @@ class Tag:
         return
 
     def __str__(self):
-        return "Tag %d: %s" % (self.tag, self.value)
+        return "Tag %s: %s" % (self.tag_name(self.tag), self.value)
 
 
 class DNG:
