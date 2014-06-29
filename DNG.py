@@ -136,18 +136,21 @@ class DNG:
             value = self.read_long()
             entries[tag] = Tag(tag, type, count, value)
             n_tags -= 1
+        next_ifdo = self.read_long()
         for entry in entries.values():
             entry.read_value(self)
 
-        return entries
+        return entries, next_ifdo
 
     def list_images(self):
         self.f.seek(self.first_ifdo)
-        entries = self.read_directory()
+        entries, next_ifdo = self.read_directory()
 
 
 if __name__ == '__main__':
     from pprint import pprint
 
     dng = DNG().open("test1.dng")
-    pprint({k: str(v) for k, v in dng.read_directory().iteritems()})
+    entries, next_ifdo = dng.read_directory()
+    pprint({k: str(v) for k, v in entries.iteritems()})
+    print next_ifdo
