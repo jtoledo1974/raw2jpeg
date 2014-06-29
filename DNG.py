@@ -14,12 +14,16 @@ class Logging:
 
     def __init__(self):
         self.level = 0
+
+        def get_log_function(level):
+            def f(string):
+                if level >= self.level:
+                    self.log(string)
+            return f
+
         for levelname in ['critical', 'error', 'warning', 'info', 'debug']:
             level = Logging.__dict__[levelname.upper()]
-
-            def f(string):
-                if level > self.level:
-                    self.log(string)
+            f = get_log_function(level)
             setattr(self, levelname, f)
 
     def basicConfig(self, level):
@@ -29,7 +33,7 @@ class Logging:
         print(string)
 
 logging = Logging()
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 
 BYTE = 1
 ASCII = 2
@@ -61,7 +65,7 @@ class Tag:
         self.value = value
 
     def unsupported(self):
-        logging.warning(
+        logging.debug(
             "Unsupported type %d for tag %s" % (
                 self.type, self.tag_name(self.tag)))
 
