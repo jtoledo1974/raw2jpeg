@@ -47,9 +47,6 @@ class Tag:
                 self.type, self.tag_name(self.tag)))
 
     def read_value(self, dng):
-        # if self.tag == 330:
-        #     import pdb; pdb.set_trace()
-
         if self.type not in self.types:
             self.unsupported()
             return
@@ -147,14 +144,30 @@ class DNG:
         return entries, next_ifdo
 
     def list_images(self):
-        self.f.seek(self.first_ifdo)
-        entries, next_ifdo = self.read_directory()
+        ifdo_list = [self.first_ifdo]
+        while len(ifdo_list):
+            # import pdb; pdb.set_trace()
+
+            ifdo = ifdo_list.pop(0)
+            if not ifdo:
+                break
+            self.seek(ifdo)
+            d, next_ifdo = self.read_directory()
+            w = d[Tag.ImageWidth].value
+            l = d[Tag.ImageLength].value
+            t = d[Tag.SubFileType].value
+            c = d[Tag.Compression].value
+            print("Type %d (%dx%d) compr: %d" % (t, w, l, c))
+            if Tag.SubIFD in d:
+                ifdo_list = d[Tag.SubIFD].value + ifdo_list
+            ifdo_list.append(next_ifdo)
 
 
 if __name__ == '__main__':
     from pprint import pprint
 
-    dng = DNG().open("test1.dng")
-    entries, next_ifdo = dng.read_directory()
-    pprint({k: str(v) for k, v in entries.iteritems()})
-    print next_ifdo
+    dng = DNG().open("test2.dng")
+    # entries, next_ifdo = dng.read_directory()
+    # pprint({k: str(v) for k, v in entries.iteritems()})
+    # print next_ifdo
+    dng.list_images()
