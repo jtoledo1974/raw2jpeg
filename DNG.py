@@ -122,8 +122,10 @@ Tag.tag_dict = {number: tag_name for tag_name, number
 class IFD:
     def __init__(self, dng, offset):
         dng.seek(offset)
+        self.offset = offset
         n_tags = dng.read_short()
         entries = []
+        self.entries = []
 
         while n_tags:
             tag = dng.read_short()
@@ -139,6 +141,28 @@ class IFD:
             tag_name = entry.tag_name()
             entry.read_value(dng)
             self.__dict__[tag_name] = entry.value
+            self.entries.append(tag_name)
+
+    def __str__(self):
+        w = self.ImageWidth
+        l = self.ImageLength
+        t = self.SubFileType
+        c = self.Compression
+        try:
+            s = self.StripByteCounts
+        except:
+            if type(self.TileByteCounts) == int:
+                s = self.TileByteCounts
+            else:
+                # import pdb; pdb.set_trace()
+                s = sum(self.TileByteCounts)
+        return "%dx%d, Type %d, compr: %d, size: %d" % (w, l, t, c, s)
+
+    def dump(self):
+        res = ""
+        for entry in self.entries:
+            res += "%s: %s\n" % (entry, self.__dict__[entry])
+        return res
 
 
 class DNG:
@@ -189,7 +213,7 @@ class DNG:
         self.first_ifdo = self.read_long()
         return self
 
-    def list_images(self):
+    def get_images(self):
         res = []
         ifdo_list = [self.first_ifdo]
         while len(ifdo_list):
@@ -199,12 +223,6 @@ class DNG:
                 break
             ifd = IFD(self, ifdo)
             res.append(ifd)
-            w = ifd.ImageWidth
-            l = ifd.ImageLength
-            t = ifd.SubFileType
-            c = ifd.Compression
-            #import pdb; pdb.set_trace()
-            logging.info("Type %d (%dx%d) compr: %d" % (t, w, l, c))
             try:
                 ifdo_list = ifd.SubIFD + ifdo_list
             except:
