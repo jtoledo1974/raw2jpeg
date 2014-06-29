@@ -46,8 +46,21 @@ class Tag:
     SubFileType = 254
     ImageWidth = 256
     ImageLength = 257
+    BitsPerSample = 258
     Compression = 259
+    Photometric = 262
+    StripOffsets = 273
     Orientation = 274
+    SamplesPerPixel = 277
+    RowsPerStrip = 278
+    StripByteCounts = 279
+    XResolution = 282
+    YResolution = 283
+    ResolutionUnit = 296
+    TileWidth = 322
+    TileLength = 323
+    TileOffsets = 324
+    TileByteCounts = 325
     SubIFD = 330
 
     types = {BYTE: 1, SHORT: 2, LONG: 4}
