@@ -200,7 +200,16 @@ class DNG:
         # return n[0]
         return unpack(self.longf, self.f.read(4))[0]
 
+    def __init__(self, path=''):
+        if path:
+            self.open(path)
+
     def open(self, path):
+        try:
+            self.close()
+        except:
+            pass
+
         self.f = open(path, "rb")
 
         endian = self.f.read(2)
@@ -212,6 +221,16 @@ class DNG:
 
         self.first_ifdo = self.read_long()
         return self
+
+    def close(self):
+        self.f.close()
+
+    def __del__(self):
+        try:
+            self.f.close()
+        except:
+            pass
+        del self.f
 
     def get_images(self):
         res = []
@@ -237,7 +256,7 @@ class DNG:
 if __name__ == '__main__':
     # from pprint import pprint
 
-    dng = DNG().open("test2.dng")
+    dng = DNG("test2.dng")
     # entries, next_ifdo = dng.read_directory()
     # pprint({k: str(v) for k, v in entries.iteritems()})
     # print next_ifdo
