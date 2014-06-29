@@ -228,13 +228,18 @@ class DNG:
             except:
                 pass
             ifd.next and ifdo_list.append(ifd.next)
+        return res
+
+    def get_previews(self):
+        return [i for i in self.get_images() if i.SubFileType == 1]
 
 
 if __name__ == '__main__':
-    from pprint import pprint
+    # from pprint import pprint
 
     dng = DNG().open("test2.dng")
     # entries, next_ifdo = dng.read_directory()
     # pprint({k: str(v) for k, v in entries.iteritems()})
     # print next_ifdo
-    dng.list_images()
+    for p in dng.get_images():
+        print str(p)
