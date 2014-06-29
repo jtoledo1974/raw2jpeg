@@ -56,7 +56,7 @@ class Tag:
         if self.types[self.type]*self.count <= 4:
             return
 
-        dng.f.seek(self.value)
+        dng.seek(self.value)
         if self.type == SHORT:
             readf = dng.read_short
         elif self.type == LONG:
@@ -96,6 +96,9 @@ class DNG:
 
         self.longf = endianc + 'L'
         self.shortf = endianc + 'H'
+
+    def seek(self, offset):
+        self.f.seek(offset)
 
     def read_short(self):
         # buf = self.f.read(2)
@@ -137,6 +140,7 @@ class DNG:
             entries[tag] = Tag(tag, type, count, value)
             n_tags -= 1
         next_ifdo = self.read_long()
+
         for entry in entries.values():
             entry.read_value(self)
 
