@@ -66,10 +66,11 @@ class Tag:
                 self.type, self.tag_name(self.tag)))
 
     def read_value(self, dng):
-        if self.type not in self.types:
+        try:
+            if self.types[self.type]*self.count <= 4:
+                return
+        except:
             self.unsupported()
-            return
-        if self.types[self.type]*self.count <= 4:
             return
 
         dng.seek(self.value)
