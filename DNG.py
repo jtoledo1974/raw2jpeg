@@ -119,29 +119,39 @@ Tag.tag_dict = {number: tag_name for tag_name, number
                 if type(number) == int}
 
 
-class IFD:
+class IFD(object):
     def __init__(self, dng, offset):
         dng.seek(offset)
         self.offset = offset
+        self.dng = dng
         n_tags = dng.read_short()
-        entries = []
-        self.entries = []
+        self.entries = {}
 
         while n_tags:
             tag = dng.read_short()
             type = dng.read_short()
             count = dng.read_long()
             value = dng.read_long()
-            entries.append(Tag(tag, type, count, value))
+            tag_obj = Tag(tag, type, count, value)
+            tag_obj.value_is_checked = False
+            tag_name = tag_obj.tag_name()
+            self.entries[tag_name] = tag_obj
             n_tags -= 1
 
         self.next = dng.read_long()
 
-        for entry in entries:
-            tag_name = entry.tag_name()
-            entry.read_value(dng)
-            self.__dict__[tag_name] = entry.value
-            self.entries.append(tag_name)
+    def __getattr__(self, attr):
+        try:
+            return self.__dict__[attr]
+        except:
+            pass
+        entry = self.entries[attr]
+        if entry.value_is_checked is True:
+            return entry.value
+        else:
+            entry.read_value(self.dng)
+            entry.value_is_checked = True
+            return entry.value
 
     def __str__(self):
         w = self.ImageWidth
@@ -161,7 +171,7 @@ class IFD:
     def dump(self):
         res = ""
         for entry in self.entries:
-            res += "%s: %s\n" % (entry, self.__dict__[entry])
+            res += "%s: %s\n" % (entry, getattr(self, entry))
         return res
 
 
