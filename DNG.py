@@ -181,6 +181,9 @@ class DNG:
         self.longf = endianc + 'L'
         self.shortf = endianc + 'H'
 
+    def fileno(self):
+        return self.f.fileno()
+
     def seek(self, offset):
         self.f.seek(offset)
 
