@@ -52,11 +52,11 @@ class Tag:
 
     types = {BYTE: 1, SHORT: 2, LONG: 4}
 
-    def tag_name(self, tag_number):
-        if tag_number not in Tag.tag_dict:
-            return str(tag_number)
-        else:
-            return Tag.tag_dict[tag_number]
+    def tag_name(self):
+        try:
+            return self.tag_dict[self.tag]
+        except:
+            return str(self.tag)
 
     def __init__(self, tag, tag_type, count, value):
         self.tag = tag
@@ -67,7 +67,7 @@ class Tag:
     def unsupported(self):
         logging.debug(
             "Unsupported type %d for tag %s" % (
-                self.type, self.tag_name(self.tag)))
+                self.type, self.tag_name()))
 
     def read_value(self, dng):
         try:
@@ -104,6 +104,28 @@ class Tag:
 Tag.tag_dict = {number: tag_name for tag_name, number
                 in Tag.__dict__.iteritems()
                 if type(number) == int}
+
+
+class IFD:
+    def __init__(self, dng, offset):
+        dng.seek(offset)
+        n_tags = dng.read_short()
+        entries = []
+
+        while n_tags:
+            tag = dng.read_short()
+            type = dng.read_short()
+            count = dng.read_long()
+            value = dng.read_long()
+            entries.append(Tag(tag, type, count, value))
+            n_tags -= 1
+
+        self.next = dng.read_long()
+
+        for entry in entries:
+            tag_name = entry.tag_name()
+            entry.read_value(dng)
+            self.__dict__[tag_name] = entry.value
 
 
 class DNG:
@@ -154,41 +176,27 @@ class DNG:
         self.first_ifdo = self.read_long()
         return self
 
-    def read_directory(self):
-        n_tags = self.read_short()
-        entries = {}
-        while n_tags:
-            tag = self.read_short()
-            type = self.read_short()
-            count = self.read_long()
-            value = self.read_long()
-            entries[tag] = Tag(tag, type, count, value)
-            n_tags -= 1
-        next_ifdo = self.read_long()
-
-        for entry in entries.values():
-            entry.read_value(self)
-
-        return entries, next_ifdo
-
     def list_images(self):
+        res = []
         ifdo_list = [self.first_ifdo]
         while len(ifdo_list):
-            # import pdb; pdb.set_trace()
 
             ifdo = ifdo_list.pop(0)
             if not ifdo:
                 break
-            self.seek(ifdo)
-            d, next_ifdo = self.read_directory()
-            w = d[Tag.ImageWidth].value
-            l = d[Tag.ImageLength].value
-            t = d[Tag.SubFileType].value
-            c = d[Tag.Compression].value
-            print("Type %d (%dx%d) compr: %d" % (t, w, l, c))
-            if Tag.SubIFD in d:
-                ifdo_list = d[Tag.SubIFD].value + ifdo_list
-            ifdo_list.append(next_ifdo)
+            ifd = IFD(self, ifdo)
+            res.append(ifd)
+            w = ifd.ImageWidth
+            l = ifd.ImageLength
+            t = ifd.SubFileType
+            c = ifd.Compression
+            #import pdb; pdb.set_trace()
+            logging.info("Type %d (%dx%d) compr: %d" % (t, w, l, c))
+            try:
+                ifdo_list = ifd.SubIFD + ifdo_list
+            except:
+                pass
+            ifd.next and ifdo_list.append(ifd.next)
 
 
 if __name__ == '__main__':
