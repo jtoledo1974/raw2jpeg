@@ -4,6 +4,7 @@
 from __future__ import with_statement
 
 import os
+from os.path import join
 import sys
 import errno
 from loop import Passthrough
@@ -178,7 +179,7 @@ class Raw2Jpeg(Passthrough):
                           self.blacklist.bl, [full_path+'/'+self._masked(f)
                                               for f in os.listdir(full_path)]))
             ld = [self._masked(f) for f in os.listdir(full_path)
-                  if not self.blacklist.match(full_path+'/'+f)]
+                  if not self.blacklist.match(join(full_path, f))]
             dirents.extend(ld)
         for r in dirents:
             yield r
