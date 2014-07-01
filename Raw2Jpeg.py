@@ -98,28 +98,17 @@ class Raw2Jpeg(Passthrough):
             if exception.errno != errno.EEXIST:
                 raise
 
-        path = "%s/%s.dng" % (THUMBDIR, os.path.basename(preview))
-        os.link(origpath, path)
-
-        # Se guarda como path-preview3.tif
-        tifpreview = "%s-preview3.tif" % path[:-4]
-        if subprocess.call(["exiv2", path, "-ep3"], stderr=self.FNULL)\
-                or not os.path.isfile(tifpreview):
-            logging.debug("Thumbnail extraction failed")
-            os.unlink(path)
-            return ''
+        with open(preview, "w") as out, DNG(origpath) as dng:
+            try:
+                jpg = dng.get_jpeg_previews()[-1]
+                dng.seek(jpg.StripOffsets)
+                out.write(dng.read(jpg.StripByteCounts))
+            except:
+                os.unlink(preview)
+                raise
+        return preview
 
         # XBMC no interpreta el exif del tif. Sacamos el JPEG embebido
-        try:
-            tp = os.open(tifpreview, os.O_RDONLY)
-            mm = mmap.mmap(tp, 0, prot=mmap.PROT_READ)
-            open(preview, "wb").write(
-                mm[mm.find("\xff\xd8"):mm.find("\xff\xd9")+2])
-            mm.close()
-            os.close(tp)
-        except OSError as exception:
-            logging.error(exception)
-
         sp = subprocess.Popen(
             ["exiv2", path, "-Pv", "-g", "Exif.Image.Orientation"],
             stdout=subprocess.PIPE, stderr=self.FNULL)
