@@ -67,7 +67,7 @@ class Raw2Jpeg(Passthrough):
 
     def _masked(self, path):
         """Devuelve el nombre falso"""
-        return path[:-4]+self.MASK if path[-4:] == ".dng" else path
+        return path[:-4]+self.MASK if path[-4:].lower() == ".dng" else path
 
     def _original(self, path):
         """Devuelve el archivo original"""
