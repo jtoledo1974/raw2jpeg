@@ -260,6 +260,12 @@ class DNG:
         except:
             pass
 
+    def get_image(self, offset):
+        return IFD(self, offset)
+
+    def get_first_image(self):
+        return self.get_image(self.first_ifdo)
+
     def get_images(self):
         res = []
         ifdo_list = [self.first_ifdo]
