@@ -175,9 +175,9 @@ class Raw2Jpeg(Passthrough):
 
         dirents = ['.', '..']
         if os.path.isdir(full_path):
-            logging.debug("Blacklist %s\nFiles %s" % (
-                          self.blacklist.bl, [full_path+'/'+self._masked(f)
-                                              for f in os.listdir(full_path)]))
+            # logging.debug("Blacklist %s\nFiles %s" % (
+            #               self.blacklist.bl, [full_path+'/'+self._masked(f)
+            #                                   for f in os.listdir(full_path)]))
             ld = [self._masked(f) for f in os.listdir(full_path)
                   if not self.blacklist.match(join(full_path, f))]
             dirents.extend(ld)
