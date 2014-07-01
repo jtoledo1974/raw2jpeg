@@ -225,6 +225,12 @@ class DNG:
         if path:
             self.open(path)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
     def open(self, path):
         try:
             self.close()
@@ -245,6 +251,7 @@ class DNG:
 
     def close(self):
         self.f.close()
+        del self.f
 
     def __del__(self):
         try:
@@ -288,5 +295,6 @@ if __name__ == '__main__':
     # print next_ifdo
     # for p in dng.get_jpeg_previews():
     #     print str(p)
-    print DNG("test2.dng").get_jpeg_previews()[-1].StripByteCounts
+    with DNG("test2.dng") as dng:
+        print dng.get_jpeg_previews()[-1].StripByteCounts
     print "hola"
