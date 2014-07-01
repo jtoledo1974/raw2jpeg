@@ -7,14 +7,14 @@ import os
 from os.path import join
 import sys
 import errno
-from loop import Passthrough
-
-from fuse import FUSE, FuseOSError
 import logging
 import subprocess
-import mmap
 import zlib
 import json
+
+from loop import Passthrough
+from fuse import FUSE, FuseOSError
+from DNG import DNG
 
 # logging.basicConfig(filename="/srv/tmp/raw2jpeg.log",level=logging.DEBUG)
 # logging.basicConfig(level=logging.DEBUG)
