@@ -255,8 +255,7 @@ class DNG:
 
     def __del__(self):
         try:
-            self.f.close()
-            del self.f
+            self.close()
         except:
             pass
 
