@@ -103,25 +103,21 @@ class Raw2Jpeg(Passthrough):
                 jpg = dng.get_jpeg_previews()[-1]
                 dng.seek(jpg.StripOffsets)
                 out.write(dng.read(jpg.StripByteCounts))
+                orientation = dng.get_first_image().Orientation
             except:
                 os.unlink(preview)
                 raise
-        return preview
 
         # XBMC no interpreta el exif del tif. Sacamos el JPEG embebido
-        sp = subprocess.Popen(
-            ["exiv2", path, "-Pv", "-g", "Exif.Image.Orientation"],
-            stdout=subprocess.PIPE, stderr=self.FNULL)
-        orientation = sp.communicate()[0].split("\n")[0]
+        try:
+            subprocess.call(
+                ["exiv2", preview,
+                 "-Mset Exif.Image.Orientation %s" % orientation],
+                stderr=self.FNULL)
+        except:
+            logging.debug("Unable to set Orientation information")
 
-        os.unlink(tifpreview)
-        os.unlink(path)
-
-        subprocess.call(
-            ["exiv2", preview, "-Mset Exif.Image.Orientation %s" % orientation],
-            stderr=self.FNULL)
-        logging.debug("Built %s, deleted temporary %s and %s" %
-                      (preview, path, tifpreview))
+        logging.debug("Built %s preview" % preview)
         return preview
 
     # Filesystem methods
