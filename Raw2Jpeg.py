@@ -47,9 +47,9 @@ class Blacklist():
         self._save()
 
     def match(self, path):
-        if path in self.bl.keys() and os.path.getmtime(path) == self.bl[path]:
+        if path in self.bl and os.path.getmtime(path) == self.bl[path]:
             return True
-        elif path in self.bl.keys():
+        elif path in self.bl:
             self.bl.pop(path)
             self._save()
         return False
