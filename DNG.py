@@ -35,13 +35,14 @@ class Logging:
 logging = Logging()
 logging.basicConfig(level=logging.INFO)
 
-BYTE = 1
-ASCII = 2
-SHORT = 2
-LONG = 4
-
 
 class Tag:
+
+    BYTE = 1
+    ASCII = 2
+    SHORT = 3
+    LONG = 4
+    RATIONAL = 5
 
     SubFileType = 254
     ImageWidth = 256
@@ -63,7 +64,7 @@ class Tag:
     TileByteCounts = 325
     SubIFD = 330
 
-    types = {BYTE: 1, SHORT: 2, LONG: 4}
+    type_lengths = {BYTE: 1, ASCII: 1, SHORT: 2, LONG: 4, RATIONAL: 8}
 
     def tag_name(self):
         try:
@@ -71,45 +72,45 @@ class Tag:
         except:
             return str(self.tag)
 
-    def __init__(self, tag, tag_type, count, value):
+    def __init__(self, tag, tag_type, count, value, dng):
         self.tag = tag
         self.type = tag_type
         self.count = count
         self.value = value
+        self.read_function = {
+            self.BYTE: self.unsupported,
+            self.ASCII: self.unsupported,
+            self.SHORT: dng.read_short,
+            self.LONG: dng.read_long,
+            self.RATIONAL: self.unsupported
+        }
 
     def unsupported(self):
         logging.debug(
             "Unsupported type %d for tag %s" % (
                 self.type, self.tag_name()))
+        raise NotImplementedError
 
-    def read_value(self, dng):
-        try:
-            if self.types[self.type]*self.count <= 4:
-                return
-        except:
-            self.unsupported()
+    def read_value(self):
+        if self.type_lengths[self.type]*self.count <= 4:
             return
 
         dng.seek(self.value)
-        if self.type == SHORT:
-            readf = dng.read_short
-        elif self.type == LONG:
-            readf = dng.read_long
-        else:
-            self.unsupported()
-            return
+        readf = self.read_function[self.type]
 
-        if self.count == 1:
-            self.value = readf()
-            return
+        try:
+            if self.count == 1:
+                self.value = readf()
+                return
 
-        c = self.count
-        v = []
-        while c:
-            v.append(readf())
-            c -= 1
-        self.value = v
-        return
+            c = self.count
+            v = []
+            while c:
+                v.append(readf())
+                c -= 1
+            self.value = v
+        except NotImplementedError:
+            return
 
     def __str__(self):
         return "Tag %s: %s" % (self.tag_name(self.tag), self.value)
@@ -137,7 +138,7 @@ class IFD(object):
             type = unpack(shortf, buf[o+2:o+4])[0]
             count = unpack(longf, buf[o+4:o+8])[0]
             value = unpack(longf, buf[o+8:o+12])[0]
-            tag_obj = Tag(tag, type, count, value)
+            tag_obj = Tag(tag, type, count, value, dng)
             tag_obj.value_is_checked = False
             tag_name = tag_obj.tag_name()
             self.entries[tag_name] = tag_obj
@@ -154,7 +155,7 @@ class IFD(object):
         if entry.value_is_checked is True:
             return entry.value
         else:
-            entry.read_value(self.dng)
+            entry.read_value()
             entry.value_is_checked = True
             return entry.value
 
