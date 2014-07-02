@@ -134,6 +134,7 @@ class IFD(object):
         self.dng = dng
         n_tags = dng.read_short()
         self.entries = {}
+        self.entry_list = []
 
         buf = dng.read(n_tags*12)
         shortf = dng.shortf
@@ -149,6 +150,7 @@ class IFD(object):
             tag_obj.value_is_checked = False
             tag_name = tag_obj.tag_name()
             self.entries[tag_name] = tag_obj
+            self.entry_list.append(tag_name)
             n += 1
 
         self.next = dng.read_long()
@@ -183,7 +185,7 @@ class IFD(object):
 
     def dump(self):
         res = ""
-        for entry in self.entries:
+        for entry in self.entry_list:
             res += "%s: %s\n" % (entry, getattr(self, entry))
         return res
 
