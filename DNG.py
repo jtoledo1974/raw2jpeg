@@ -50,6 +50,8 @@ class Tag:
     BitsPerSample = 258
     Compression = 259
     Photometric = 262
+    Make = 271
+    Model = 272
     StripOffsets = 273
     Orientation = 274
     SamplesPerPixel = 277
@@ -58,11 +60,15 @@ class Tag:
     XResolution = 282
     YResolution = 283
     ResolutionUnit = 296
+    DateTime = 306
     TileWidth = 322
     TileLength = 323
     TileOffsets = 324
     TileByteCounts = 325
     SubIFD = 330
+    JPEGInterchangeFormat = 513
+    JPEGInterchangeFormatLength = 514
+    ExifTag = 34665
 
     type_lengths = {BYTE: 1, ASCII: 1, SHORT: 2, LONG: 4, RATIONAL: 8}
 
