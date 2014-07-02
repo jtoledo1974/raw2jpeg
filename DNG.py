@@ -293,8 +293,12 @@ class DNG:
             except:
                 pass
             ifd.next and ifdo_list.append(ifd.next)
-        res.sort(cmp=lambda x, y: cmp(x.ImageWidth*x.ImageLength,
-                                      y.ImageWidth*y.ImageLength))
+        try:
+            res.sort(cmp=lambda x, y: cmp(x.ImageWidth*x.ImageLength,
+                                          y.ImageWidth*y.ImageLength))
+        except KeyError:
+            pass  # Exif images don't seem to have it
+
         return res
 
     def get_previews(self):
