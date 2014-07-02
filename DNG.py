@@ -84,14 +84,14 @@ class Tag:
         self.count = count
         self.value = value
         self.read_function = {
-            self.BYTE: self.unsupported,
-            self.ASCII: self.unsupported,
+            self.BYTE: dng.read_byte,
+            self.ASCII: dng.read_ascii,
             self.SHORT: dng.read_short,
             self.LONG: dng.read_long,
-            self.RATIONAL: self.unsupported
+            self.RATIONAL: dng.read_rational
         }
 
-    def unsupported(self):
+    def unsupported(self, c=0):
         logging.debug(
             "Unsupported type %d for tag %s" % (
                 self.type, self.tag_name()))
@@ -102,17 +102,18 @@ class Tag:
             return
 
         dng.seek(self.value)
+
         readf = self.read_function[self.type]
 
         try:
-            if self.count == 1:
-                self.value = readf()
+            if self.count == 1 or self.type == self.ASCII:
+                self.value = readf(self.count)
                 return
 
             c = self.count
             v = []
             while c:
-                v.append(readf())
+                v.append(readf(self.count))
                 c -= 1
             self.value = v
         except NotImplementedError:
@@ -212,20 +213,16 @@ class DNG:
     def read(self, count):
         return self.f.read(count)
 
-    def read_short(self):
-        # buf = self.f.read(2)
-        # print "Hex buf %s" % buf.encode('hex')
-        # n = unpack(self.shortf, buf)
-        # print "Unpacked n %d" % n
-        # return n[0]
+    def read_byte(self, c=0):
+        return int(self.f.read(1))
+
+    def read_ascii(self, count):
+        return self.f.read(count)[:-1]
+
+    def read_short(self, c=0):
         return unpack(self.shortf, self.f.read(2))[0]
 
-    def read_long(self):
-        # buf = self.f.read(4)
-        # print "Hex buf %s" % buf.encode('hex')
-        # n = unpack(self.longf, buf)
-        # print "Unpacked n %d" % n
-        # return n[0]
+    def read_long(self, c=0):
         return unpack(self.longf, self.f.read(4))[0]
 
     def __init__(self, path=''):
