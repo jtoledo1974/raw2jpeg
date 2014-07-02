@@ -210,7 +210,7 @@ class DNG:
         return self.f.fileno()
 
     def seek(self, offset):
-        self.f.seek(offset)
+        self.f.seek(self.offset + offset)
 
     def read(self, count):
         return self.f.read(count)
@@ -227,9 +227,14 @@ class DNG:
     def read_long(self, c=0):
         return unpack(self.longf, self.f.read(4))[0]
 
-    def __init__(self, path=''):
+    def read_rational(self, c=0):
+        return float(unpack(self.longf, self.f.read(4))[0]) \
+            / unpack(self.longf, self.f.read(4))[0]
+
+    def __init__(self, path='', offset=0):
+        # import pdb; pdb.set_trace()
         if path:
-            self.open(path)
+            self.open(path, offset)
 
     def __enter__(self):
         return self
@@ -237,13 +242,15 @@ class DNG:
     def __exit__(self, type, value, traceback):
         self.close()
 
-    def open(self, path):
+    def open(self, source, offset=0):
         try:
             self.close()
         except:
             pass
 
-        self.f = open(path, "rb")
+        self.f = open(source, "rb")
+        self.offset = offset
+        self.f.seek(offset)
 
         endian = self.f.read(2)
         self.set_endian(endian)
