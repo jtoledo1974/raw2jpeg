@@ -304,6 +304,10 @@ class DNG:
     def get_jpeg_previews(self):
         return [i for i in self.get_previews() if i.Compression == 7]
 
+    def read_jpeg_preview(self, index=0):
+        jpg = self.get_jpeg_previews()[index]
+        self.seek(jpg.StripOffsets)
+        return self.read(jpg.StripByteCounts)
 
 if __name__ == '__main__':
     # from pprint import pprint
