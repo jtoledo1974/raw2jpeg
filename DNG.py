@@ -163,8 +163,12 @@ class IFD(object):
         if entry.value_is_checked is True:
             return entry.value
         else:
-            entry.read_value()
-            entry.value_is_checked = True
+            try:
+                entry.read_value()
+                entry.value_is_checked = True
+            except:
+                logging.debug("Unable to read value for tag %s" % attr)
+                raise NotImplementedError
             return entry.value
 
     def __str__(self):
@@ -184,7 +188,10 @@ class IFD(object):
     def dump(self):
         res = ""
         for entry in self.entry_list:
-            res += "%s: %s\n" % (entry, getattr(self, entry))
+            try:
+                res += "%s: %s\n" % (entry, str(getattr(self, entry))[:60])
+            except NotImplementedError:
+                pass
         return res
 
 
