@@ -318,7 +318,7 @@ class DNG:
     def read_jpeg_preview(self, index=0):
         try:
             jpg = self.get_jpeg_previews()[index]
-            if hasattr(jpg, 'StripOffsets') and hasattr(jpg, 'StripBytesCounts'):
+            if hasattr(jpg, 'StripOffsets') and hasattr(jpg, 'StripByteCounts'):
                 self.seek(jpg.StripOffsets)
                 return self.read(jpg.StripByteCounts)
             elif hasattr(jpg, 'JPEGInterchangeFormat') \
