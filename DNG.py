@@ -190,7 +190,7 @@ class IFD(object):
 
 class DNG:
     def wrong_format(self):
-        logging.error("Invalid file format")
+        logging.error("Invalid file format in file %s" % self.f.name)
         raise IOError
 
     def set_endian(self, endian):
@@ -229,8 +229,9 @@ class DNG:
         return float(unpack(self.longf, self.f.read(4))[0]) \
             / unpack(self.longf, self.f.read(4))[0]
 
-    def __init__(self, path='', offset=0):
-        # import pdb; pdb.set_trace()
+    def __init__(self, path='', offset=0, exif=False):
+        self.exif = exif  # If True we are opening the exif IFD from a JPEG
+
         if path:
             self.open(path, offset)
 
@@ -300,25 +301,42 @@ class DNG:
         return res
 
     def get_previews(self):
-        return [i for i in self.get_images() if i.SubFileType == 1]
+        return [i for i in self.get_images()
+                if self.exif or i.SubFileType == 1]
 
     def get_jpeg_previews(self):
-        return [i for i in self.get_previews() if i.Compression == 7]
+        return [i for i in self.get_previews()
+                if hasattr(i, 'Compression') and i.Compression in (7, 6)]
 
     def read_jpeg_preview(self, index=0):
-        jpg = self.get_jpeg_previews()[index]
-        self.seek(jpg.StripOffsets)
-        return self.read(jpg.StripByteCounts)
+        try:
+            jpg = self.get_jpeg_previews()[index]
+            if hasattr(jpg, 'StripOffsets') and hasattr(jpg, 'StripBytesCounts'):
+                self.seek(jpg.StripOffsets)
+                return self.read(jpg.StripByteCounts)
+            elif hasattr(jpg, 'JPEGInterchangeFormat') \
+                    and hasattr(jpg, 'JPEGInterchangeFormatLength'):
+                self.seek(jpg.JPEGInterchangeFormat)
+                return self.read(jpg.JPEGInterchangeFormatLength)
+        except KeyError:
+            logging.error("No jpeg preview in %s" % self.f.name)
+            raise IOError
+
+
+def JPG(path):
+    return DNG(path, offset=12, exif=True)
 
 if __name__ == '__main__':
     # from pprint import pprint
 
-    # dng = DNG("test2.dng")
-    # entries, next_ifdo = dng.read_directory()
-    # pprint({k: str(v) for k, v in entries.iteritems()})
-    # print next_ifdo
-    # for p in dng.get_jpeg_previews():
-    #     print str(p)
-    with DNG("test2.dng") as dng:
-        print dng.get_jpeg_previews()[-1].StripByteCounts
+    jpg = JPG("test2.jpg")
+    for p in jpg.get_jpeg_previews():
+        print p.offset
+        print p.dump()
+    print [str(j.dump()) for j in jpg.get_jpeg_previews()]
+    f = open("thumb.jpg", "w+b")
+    f.write(jpg.read_jpeg_preview())
+    # with DNG("test2.dng") as dng:
+    #     print "\n".join([str(i) for i in dng.get_jpeg_previews()])
+    #     # print dng.get_jpeg_previews()[-1].StripByteCounts
     print "hola"
