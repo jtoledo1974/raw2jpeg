@@ -221,7 +221,7 @@ class DNG:
         return self.f.read(count)
 
     def read_byte(self, c=0):
-        return int(self.f.read(1))
+        return ord(self.f.read(1))
 
     def read_ascii(self, count):
         return self.f.read(count)[:-1]
