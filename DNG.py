@@ -329,6 +329,13 @@ class DNG:
             logging.error("No jpeg preview in %s" % self.f.name)
             raise IOError
 
+    def __getattr__(self, attr):
+        if attr == 'Orientation':
+            try:
+                return self.get_first_image().Orientation
+            except:
+                return self.get_jpeg_previews()[-1].Orientation
+
 
 def JPG(path):
     return DNG(path, offset=12, exif=True)
@@ -336,11 +343,12 @@ def JPG(path):
 if __name__ == '__main__':
     # from pprint import pprint
 
-    jpg = JPG("test2.jpg")
-    for p in jpg.get_jpeg_previews():
+    jpg = JPG("test.jpg")
+    for p in jpg.get_images():
         print p.offset
         print p.dump()
-    print [str(j.dump()) for j in jpg.get_jpeg_previews()]
+        print "Orientation %d" % jpg.Orientation
+    # print [str(j.dump()) for j in jpg.get_jpeg_previews()]
     f = open("thumb.jpg", "w+b")
     f.write(jpg.read_jpeg_preview())
     # with DNG("test2.dng") as dng:
