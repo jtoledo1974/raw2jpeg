@@ -76,17 +76,18 @@ class Tag:
         except:
             return str(self.tag)
 
-    def __init__(self, tag, tag_type, count, value, dng):
+    def __init__(self, tag, tag_type, count, value, file):
         self.tag = tag
         self.type = tag_type
         self.count = count
         self.value = value
+        self.file = file
         self.read_function = {
-            self.BYTE: dng.read_byte,
-            self.ASCII: dng.read_ascii,
-            self.SHORT: dng.read_short,
-            self.LONG: dng.read_long,
-            self.RATIONAL: dng.read_rational
+            self.BYTE: file.read_byte,
+            self.ASCII: file.read_ascii,
+            self.SHORT: file.read_short,
+            self.LONG: file.read_long,
+            self.RATIONAL: file.read_rational
         }
 
     def unsupported(self, c=0):
@@ -99,7 +100,7 @@ class Tag:
         if self.type_lengths[self.type]*self.count <= 4:
             return
 
-        dng.seek(self.value)
+        self.file.seek(self.value)
 
         readf = self.read_function[self.type]
 
