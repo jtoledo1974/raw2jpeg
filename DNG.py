@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys
-import errno
 from struct import unpack
 
 
@@ -179,7 +177,6 @@ class IFD(object):
             if type(self.TileByteCounts) == int:
                 s = self.TileByteCounts
             else:
-                # import pdb; pdb.set_trace()
                 s = sum(self.TileByteCounts)
         return "%dx%d, Type %d, compr: %d, size: %d" % (w, l, t, c, s)
 
@@ -193,7 +190,7 @@ class IFD(object):
 class DNG:
     def wrong_format(self):
         logging.error("Invalid file format")
-        sys.exit(errno.EPERM)
+        raise IOError
 
     def set_endian(self, endian):
         if endian == 'II':
