@@ -156,10 +156,9 @@ class IFD(object):
 
     def __getattr__(self, attr):
         try:
-            return self.__dict__[attr]
+            entry = self.entries[attr]
         except:
-            pass
-        entry = self.entries[attr]
+            raise AttributeError
         if entry.value_is_checked is True:
             return entry.value
         else:
@@ -335,6 +334,8 @@ class DNG:
                 return self.get_first_image().Orientation
             except:
                 return self.get_jpeg_previews()[-1].Orientation
+        else:
+            raise AttributeError
 
 
 def JPG(path):
