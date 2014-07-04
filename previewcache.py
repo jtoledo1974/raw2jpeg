@@ -6,6 +6,7 @@ import logging
 import zlib
 import errno
 import subprocess
+import json
 
 from DNG import DNG
 
@@ -16,17 +17,57 @@ FNULL = open(os.devnull, 'w')  # Se usa para redirigir a /dev/null
 def set_thumbdir(thumbdir):
     global THUMBDIR
     THUMBDIR = thumbdir
+    global orientations
+    orientations = Orientations()
 
 
 def get_thumbdir():
     return THUMBDIR
 
 
+class Orientations():
+    def __init__(self):
+        self.o = {}
+        filename = join(get_thumbdir(), "orientations.txt")
+        try:
+            self.o_file = open(filename, "r+")
+        except:
+            try:
+                self.o_file = open(filename, "w")
+            except:
+                logging.warning(
+                    "Error trying to open orientation file %s for writing"
+                    % filename)
+
+        try:
+            self.o = json.loads(self.o_file.read())
+        except:
+            logging.warning("Error loading orientations file")
+
+    def _save(self):
+        self.o_file.seek(0)
+        self.o_file.truncate()
+        self.o_file.write(json.dumps(self.o))
+        self.o_file.flush()
+
+    def set(self, path, orientation):
+        logging.debug("Setting orientation %d for %s" % (orientation, path))
+        self.o[path] = orientation
+        self._save()
+
+    def get(self, path):
+        try:
+            return self.o[path]
+        except:
+            logging.warning("Orientation not found for %s" % path)
+            return 1
+
+
 def get_crc(path):
     return "{0:x}".format(zlib.crc32(path.encode('utf-8')) & 0xffffffff)
 
 
-def get_preview(origpath, thumbnail=False):
+def get_preview(origpath, thumbnail=False, return_orientation=False):
     suffix = '-tn' if thumbnail else ''
     preview = join(THUMBDIR, dirname(origpath)[1:], basename(origpath)+suffix)
 
@@ -34,10 +75,20 @@ def get_preview(origpath, thumbnail=False):
     exists = isfile(preview)
     logging.debug(
         "Preview %s from %s, exists %s" % (preview, origpath, exists))
-    if exists \
-       and getmtime(preview) >= getmtime(origpath):
+
+    if exists and getmtime(preview) >= getmtime(origpath):
+        if not return_orientation:
+            return preview
+        else:
+            return (preview, orientations.get(preview))
+
+    (preview, orientation) = build_preview(origpath, preview, thumbnail)
+    orientations.set(preview, orientation)
+
+    if not return_orientation:
         return preview
-    return build_preview(origpath, preview, thumbnail)
+    else:
+        return (preview, orientation)
 
 
 def build_preview(origpath, preview, thumbnail):
@@ -69,4 +120,4 @@ def build_preview(origpath, preview, thumbnail):
             logging.debug("Unable to set Orientation information")
 
         logging.debug("Built %s preview" % preview)
-        return preview
+        return (preview, orientation)
