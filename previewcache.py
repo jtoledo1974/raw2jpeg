@@ -62,6 +62,8 @@ class Orientations():
             logging.warning("Orientation not found for %s" % path)
             return 1
 
+orientations = Orientations()
+
 
 def get_crc(path):
     return "{0:x}".format(zlib.crc32(path.encode('utf-8')) & 0xffffffff)
