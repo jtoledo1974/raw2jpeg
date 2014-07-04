@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os.path
+from os.path import join, getmtime, dirname, basename, isfile
+import os
 import logging
 import zlib
 import errno
 import subprocess
 
-import DNG
+from DNG import DNG
 
 THUMBDIR = "/tmp/.previewcache"
+FNULL = open(os.devnull, 'w')  # Se usa para redirigir a /dev/null
 
 
 def set_thumbdir(thumbdir):
@@ -20,34 +22,39 @@ def get_thumbdir():
     return THUMBDIR
 
 
-def get_preview(origpath):
-    crc = "{0:x}".format(zlib.crc32(origpath.encode('utf-8')) & 0xffffffff)
-    preview = THUMBDIR+"/"+crc[0]+"/"+crc
+def get_crc(path):
+    return "{0:x}".format(zlib.crc32(path.encode('utf-8')) & 0xffffffff)
+
+
+def get_preview(origpath, thumbnail=False):
+    suffix = '-tn' if thumbnail else ''
+    preview = join(THUMBDIR, dirname(origpath)[1:], basename(origpath)+suffix)
 
     # Comprobar si está construido
-    exists = os.path.isfile(preview)
+    exists = isfile(preview)
     logging.debug(
         "Preview %s from %s, exists %s" % (preview, origpath, exists))
     if exists \
-       and os.path.getmtime(preview) >= os.path.getmtime(origpath):
+       and getmtime(preview) >= getmtime(origpath):
         return preview
-    return build_preview(origpath, preview)
+    return build_preview(origpath, preview, thumbnail)
 
 
-def build_preview(self, origpath, preview):
+def build_preview(origpath, preview, thumbnail):
 
     try:
-        os.makedirs(os.path.dirname(preview))
+        os.makedirs(dirname(preview))
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
 
     with open(preview, "w") as out, DNG(origpath) as dng:
         try:
-            jpg = dng.get_jpeg_previews()[-1]
-            dng.seek(jpg.StripOffsets)
-            out.write(dng.read(jpg.StripByteCounts))
-            orientation = dng.get_first_image().Orientation
+            if thumbnail:
+                out.write(dng.read_jpeg_preview(0))  # The smallest available
+            else:
+                out.write(dng.read_jpeg_preview(-1))  # The largest available
+            orientation = dng.Orientation
         except:
             os.unlink(preview)
             raise
@@ -57,7 +64,7 @@ def build_preview(self, origpath, preview):
             subprocess.call(
                 ["exiv2", preview,
                  "-Mset Exif.Image.Orientation %s" % orientation],
-                stderr=self.FNULL)
+                stderr=FNULL)
         except:
             logging.debug("Unable to set Orientation information")
 
