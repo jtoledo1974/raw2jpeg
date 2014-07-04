@@ -8,27 +8,25 @@ from os.path import join
 import sys
 import errno
 import logging
-import subprocess
-import zlib
 import json
 
 from loop import Passthrough
 from fuse import FUSE, FuseOSError
-from DNG import DNG
 
+from previewcache import get_thumbdir, get_preview, set_thumbdir
+
+set_thumbdir('/srv/tmp/.raw2jpg')
 # logging.basicConfig(filename="/srv/tmp/raw2jpeg.log",level=logging.DEBUG)
-# logging.basicConfig(level=logging.DEBUG)
-
-THUMBDIR = "/srv/tmp/.raw2jpg"
+logging.basicConfig(level=logging.DEBUG)
 
 
 class Blacklist():
     def __init__(self):
         self.bl = {}
         try:
-            self.blfile = open(THUMBDIR+"/blacklist.txt", "r+")
+            self.blfile = open(get_thumbdir()+"/blacklist.txt", "r+")
         except:
-            self.blfile = open(THUMBDIR+"/blacklist.txt", "w")
+            self.blfile = open(get_thumbdir()+"/blacklist.txt", "w")
         try:
             self.bl = json.loads(self.blfile.read())
         except:
@@ -77,49 +75,6 @@ class Raw2Jpeg(Passthrough):
     def _ismasked(self, path):
         return path[-14:] == self.MASK
 
-    def _getpreview(self, origpath):
-        crc = "{0:x}".format(zlib.crc32(origpath.encode('utf-8')) & 0xffffffff)
-        preview = THUMBDIR+"/"+crc[0]+"/"+crc
-
-        # Comprobar si está construido
-        exists = os.path.isfile(preview)
-        logging.debug(
-            "Preview %s from %s, exists %s" % (preview, origpath, exists))
-        if exists \
-           and os.path.getmtime(preview) >= os.path.getmtime(origpath):
-            return preview
-        return self._buildpreview(origpath, preview)
-
-    def _buildpreview(self, origpath, preview):
-
-        try:
-            os.makedirs(os.path.dirname(preview))
-        except OSError as exception:
-            if exception.errno != errno.EEXIST:
-                raise
-
-        with open(preview, "w") as out, DNG(origpath) as dng:
-            try:
-                jpg = dng.get_jpeg_previews()[-1]
-                dng.seek(jpg.StripOffsets)
-                out.write(dng.read(jpg.StripByteCounts))
-                orientation = dng.get_first_image().Orientation
-            except:
-                os.unlink(preview)
-                raise
-
-        # XBMC no interpreta el exif del tif. Sacamos el JPEG embebido
-        try:
-            subprocess.call(
-                ["exiv2", preview,
-                 "-Mset Exif.Image.Orientation %s" % orientation],
-                stderr=self.FNULL)
-        except:
-            logging.debug("Unable to set Orientation information")
-
-        logging.debug("Built %s preview" % preview)
-        return preview
-
     # Filesystem methods
     # ==================
 
@@ -144,7 +99,7 @@ class Raw2Jpeg(Passthrough):
         if self._ismasked(path):
             orig = self._original(full_path)
             try:
-                size = getattr(os.lstat(self._getpreview(orig)), 'st_size')
+                size = getattr(os.lstat(get_preview(orig)), 'st_size')
                 res['st_size'] = size
             except:
                 self.blacklist.add(self._original(full_path))
@@ -217,7 +172,7 @@ class Raw2Jpeg(Passthrough):
         logging.debug("open %s %s" % (self._full_path(path), flags))
         full_path = self._full_path(path)
         if self._ismasked(full_path):
-                full_path = self._getpreview(self._original(full_path))
+                full_path = get_preview(self._original(full_path))
         return os.open(full_path, flags)
 
     def create(self, path, mode, fi=None):
