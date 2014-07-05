@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from struct import unpack
+from pprint import pformat
 
 
 class Logging:
@@ -29,6 +30,21 @@ class Logging:
 
     def log(self, string):
         print(string)
+
+    def attributes(self, obj):
+        res = ""
+        for attr_name in dir(obj):
+            res += "%s: " % attr_name
+            try:
+                value = getattr(obj, attr_name)
+                if type(value) in (list, dict):
+                    res += pformat(value)
+                else:
+                    res += str(value)
+            except Exception as e:
+                res += 'Error %s' % e
+            res += '\n'
+        return res
 
 logging = Logging()
 logging.basicConfig(level=logging.INFO)
