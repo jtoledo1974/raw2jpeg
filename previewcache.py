@@ -1,28 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from os.path import join, getmtime, dirname, basename, isfile
+from os.path import join, getmtime, dirname, basename, isdir, isfile, splitext
 import os
-import logging
 import zlib
 import errno
 import subprocess
 import json
+import tempfile
 
-from DNG import DNG
+from DNG import DNG, JPG, logging
 
-THUMBDIR = "/tmp/.previewcache"
+PREVIEWDIR = "/tmp/.previewcache"
 FNULL = open(os.devnull, 'w')  # Se usa para redirigir a /dev/null
-
-
-def set_thumbdir(thumbdir):
-    global THUMBDIR
-    THUMBDIR = thumbdir
-    global orientations
-    orientations = Orientations()
-
-
-def get_thumbdir():
-    return THUMBDIR
 
 
 class Orientations():
@@ -31,6 +20,7 @@ class Orientations():
         filename = join(get_thumbdir(), "orientations.txt")
         try:
             self.o_file = open(filename, "r+")
+            self.o = json.loads(self.o_file.read())
         except:
             try:
                 self.o_file = open(filename, "w")
@@ -38,11 +28,6 @@ class Orientations():
                 logging.warning(
                     "Error trying to open orientation file %s for writing"
                     % filename)
-
-        try:
-            self.o = json.loads(self.o_file.read())
-        except:
-            logging.warning("Error loading orientations file")
 
     def _save(self):
         self.o_file.seek(0)
@@ -62,7 +47,23 @@ class Orientations():
             logging.warning("Orientation not found for %s" % path)
             return 1
 
-orientations = Orientations()
+
+def set_thumbdir(thumbdir):
+    global PREVIEWDIR
+    PREVIEWDIR = thumbdir
+    try:
+        tempfile.TemporaryFile(dir=thumbdir)
+    except:
+        os.makedirs(thumbdir)
+    global orientations
+    orientations = Orientations()
+
+
+def get_thumbdir():
+    return PREVIEWDIR
+
+orientations = None
+set_thumbdir(PREVIEWDIR)
 
 
 def get_crc(path):
@@ -70,8 +71,10 @@ def get_crc(path):
 
 
 def get_preview(origpath, thumbnail=False, return_orientation=False):
-    suffix = '-tn' if thumbnail else ''
-    preview = join(THUMBDIR, dirname(origpath)[1:], basename(origpath)+suffix)
+    # TODO when the rest is working go back to using crcs as the filename
+    p_type = 'thumbnails' if thumbnail else 'previews'
+    preview = join(
+        PREVIEWDIR, p_type, dirname(origpath)[1:], basename(origpath)+'.jpg')
 
     # Comprobar si está construido
     exists = isfile(preview)
@@ -94,32 +97,35 @@ def get_preview(origpath, thumbnail=False, return_orientation=False):
 
 
 def build_preview(origpath, preview, thumbnail):
-
     try:
         os.makedirs(dirname(preview))
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
+    ext = splitext(origpath)[1].lower()
+    IMG = {'.dng': DNG, '.jpg': JPG, '.jpeg': JPG}[ext]
 
-    with open(preview, "w") as out, DNG(origpath) as dng:
+    with open(preview, "w") as out, IMG(origpath) as img:
         try:
             if thumbnail:
-                out.write(dng.read_jpeg_preview(0))  # The smallest available
+                out.write(img.read_jpeg_preview(0))  # The smallest available
             else:
-                out.write(dng.read_jpeg_preview(-1))  # The largest available
-            orientation = dng.Orientation
+                out.write(img.read_jpeg_preview(-1))  # The largest available
+            orientation = img.Orientation
         except:
             os.unlink(preview)
             raise
 
         # XBMC no interpreta el exif del tif. Sacamos el JPEG embebido
-        try:
-            subprocess.call(
-                ["exiv2", preview,
-                 "-Mset Exif.Image.Orientation %s" % orientation],
-                stderr=FNULL)
-        except:
-            logging.debug("Unable to set Orientation information")
+
+        # Commented out because for some reason it is failing in the rspbrry pi
+        # try:
+        #     subprocess.call(
+        #         ["exiv2", preview,
+        #          "-Mset Exif.Image.Orientation %s" % orientation],
+        #         stderr=FNULL)
+        # except:
+        #     logging.debug("Unable to set Orientation information")
 
         logging.debug("Built %s preview" % preview)
         return (preview, orientation)
