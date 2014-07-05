@@ -48,22 +48,58 @@ class Orientations():
             return 1
 
 
+class Blacklist():
+    def __init__(self):
+        self.bl = {}
+        filename = join(get_thumbdir(), "blacklist.txt")
+        try:
+            self.blfile = open(filename, "r+")
+            self.bl = json.loads(self.blfile.read())
+        except:
+            try:
+                self.blfile = open(filename, "w")
+            except:
+                logging.warning(
+                    "Error loading preview blacklist file %s" % filename)
+
+    def _save(self):
+        self.blfile.seek(0)
+        self.blfile.truncate()
+        self.blfile.write(json.dumps(self.bl))
+        self.blfile.flush()
+
+    def add(self, path):
+        logging.debug("Blacklisting %s" % path)
+        self.bl[path] = os.path.getmtime(path)
+        self._save()
+
+    def match(self, path, origmtime=None):
+        try:
+            # It is a match if the date did not change
+            origmtime = origmtime or os.path.getmtime(path)
+            return origmtime == self.bl[path]
+        except:
+            try:
+                self.bl.pop(path)
+                self._save()
+            except:
+                pass
+        return False
+
+
 def set_thumbdir(thumbdir):
-    global PREVIEWDIR
+    global PREVIEWDIR, orientations, blacklist
     PREVIEWDIR = thumbdir
     try:
         tempfile.TemporaryFile(dir=thumbdir)
     except:
         os.makedirs(thumbdir)
-    global orientations
     orientations = Orientations()
+    blacklist = Blacklist()
 
 
 def get_thumbdir():
     return PREVIEWDIR
-
-orientations = None
-set_thumbdir(PREVIEWDIR)
 
 
 def get_crc(path):
@@ -76,18 +112,26 @@ def get_preview(origpath, thumbnail=False, return_orientation=False):
     preview = join(
         PREVIEWDIR, p_type, dirname(origpath)[1:], basename(origpath)+'.jpg')
 
-    # Comprobar si está construido
-    exists = isfile(preview)
-    logging.debug(
-        "Preview %s from %s, exists %s" % (preview, origpath, exists))
+    try:
+        origmtime = getmtime(origpath)
+        prevmtime = getmtime(preview)
+        if prevmtime >= origmtime:
+            if not return_orientation:
+                return preview
+            else:
+                return (preview, orientations.get(preview))
+    except:
+        pass  # The preview is not yet built
 
-    if exists and getmtime(preview) >= getmtime(origpath):
-        if not return_orientation:
-            return preview
-        else:
-            return (preview, orientations.get(preview))
+    if blacklist.match(origpath, origmtime=origmtime):
+        raise IOError
 
-    (preview, orientation) = build_preview(origpath, preview, thumbnail)
+    try:
+        (preview, orientation) = build_preview(origpath, preview, thumbnail)
+    except:
+        blacklist.add(origpath)
+        raise IOError
+
     orientations.set(preview, orientation)
 
     if not return_orientation:
@@ -129,3 +173,8 @@ def build_preview(origpath, preview, thumbnail):
 
         logging.debug("Built %s preview" % preview)
         return (preview, orientation)
+
+
+orientations = None
+blacklist = None
+set_thumbdir(PREVIEWDIR)
