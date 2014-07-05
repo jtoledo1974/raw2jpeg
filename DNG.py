@@ -307,17 +307,33 @@ class DNG:
             ifdo = ifdo_list.pop(0)
             if not ifdo:
                 break
-            ifd = IFD(self, ifdo)
-            res.append(ifd)
             try:
-                ifdo_list = ifd.SubIFD + ifdo_list
+                ifd = IFD(self, ifdo)
+                res.append(ifd)
+
+                def append_ifd(list, tag):
+                    # It can either be a tag or a list of tags
+                    try:
+                        list = tag + list
+                    except TypeError:
+                        list = [tag] + list
+                    return list
+
+                try:
+                    ifdo_list = append_ifd(ifdo_list, ifd.SubIFD)
+                except:
+                    pass
+                try:
+                    ifdo_list = append_ifd(ifdo_list, ifd.ExifTag)
+                except:
+                    pass
             except:
                 pass
             ifd.next and ifdo_list.append(ifd.next)
         try:
             res.sort(cmp=lambda x, y: cmp(x.ImageWidth*x.ImageLength,
                                           y.ImageWidth*y.ImageLength))
-        except KeyError:
+        except (KeyError, AttributeError):
             pass  # Exif images don't seem to have it
 
         return res
