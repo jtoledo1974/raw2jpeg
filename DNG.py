@@ -83,6 +83,8 @@ class Tag:
     JPEGInterchangeFormat = 513
     JPEGInterchangeFormatLength = 514
     ExifTag = 34665
+    PixelXDimension = 40962
+    PixelYDimension = 40963
 
     type_lengths = {BYTE: 1, ASCII: 1, SHORT: 2, LONG: 4, RATIONAL: 8}
 
@@ -157,6 +159,7 @@ class IFD(object):
         n = 0
         SHORT = Tag.SHORT
         BYTE = Tag.BYTE
+        ASCII = Tag.ASCII
         while n < n_tags:
             o = n*12
             tag = unpack(shortf, buf[o:o+2])[0]
@@ -166,7 +169,9 @@ class IFD(object):
             if type == SHORT:
                 value = unpack(shortf, buf[o+8:o+10])[0]
             elif type == BYTE:
-                value = buf[0+8]
+                value = buf[o+8]
+            elif type == ASCII and count <= 4:
+                value = buf[o+8:o+8+count]
             else:
                 value = unpack(longf, buf[o+8:o+12])[0]
 
@@ -210,7 +215,7 @@ class IFD(object):
         return "%dx%d, Type %d, compr: %d, size: %d" % (w, l, t, c, s)
 
     def dump(self):
-        res = ""
+        res = "Offset: %d -> Next: %d\n" % (self.offset, self.next)
         for entry in self.entry_list:
             try:
                 res += "%s: %s\n" % (entry, str(getattr(self, entry))[:60])
