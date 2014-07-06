@@ -155,12 +155,21 @@ class IFD(object):
         shortf = dng.shortf
         longf = dng.longf
         n = 0
+        SHORT = Tag.SHORT
+        BYTE = Tag.BYTE
         while n < n_tags:
             o = n*12
             tag = unpack(shortf, buf[o:o+2])[0]
             type = unpack(shortf, buf[o+2:o+4])[0]
             count = unpack(longf, buf[o+4:o+8])[0]
-            value = unpack(longf, buf[o+8:o+12])[0]
+
+            if type == SHORT:
+                value = unpack(shortf, buf[o+8:o+10])[0]
+            elif type == BYTE:
+                value = buf[0+8]
+            else:
+                value = unpack(longf, buf[o+8:o+12])[0]
+
             tag_obj = Tag(tag, type, count, value, dng)
             tag_obj.value_is_checked = False
             tag_name = tag_obj.tag_name()
