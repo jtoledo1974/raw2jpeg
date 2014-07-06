@@ -182,7 +182,11 @@ class IFD(object):
             self.entry_list.append(tag_name)
             n += 1
 
-        self.next = dng.read_long()
+        if self.entry_list[-1] == '0':
+            # At least the HTD diamond counts the next tag as one of the tags
+            self.next = 0
+        else:
+            self.next = dng.read_long()
 
     def __getattr__(self, attr):
         try:
@@ -390,7 +394,7 @@ def JPG(path):
 if __name__ == '__main__':
     # from pprint import pprint
 
-    jpg = JPG("test.jpg")
+    jpg = JPG("test5.jpg")
     for p in jpg.get_images():
         print p.offset
         print p.dump()
