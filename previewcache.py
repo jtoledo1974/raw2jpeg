@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from os.path import join, getmtime, dirname, basename, isdir, isfile, splitext
+from os.path import join, getmtime, dirname, basename, splitext
 import os
 import zlib
 import errno
@@ -12,6 +12,10 @@ from DNG import DNG, JPG, logging
 
 PREVIEWDIR = "/tmp/.previewcache"
 FNULL = open(os.devnull, 'w')  # Se usa para redirigir a /dev/null
+
+
+class PreviewError(StandardError):
+    pass
 
 
 class Orientations():
@@ -124,13 +128,13 @@ def get_preview(origpath, thumbnail=False, return_orientation=False):
         pass  # The preview is not yet built
 
     if blacklist.match(origpath, origmtime=origmtime):
-        raise IOError
+        raise PreviewError
 
     try:
         (preview, orientation) = build_preview(origpath, preview, thumbnail)
     except:
         blacklist.add(origpath)
-        raise IOError
+        raise PreviewError
 
     orientations.set(preview, orientation)
 

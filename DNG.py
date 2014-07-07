@@ -390,7 +390,12 @@ class DNG:
 
 
 def JPG(path):
-    return DNG(path, offset=12, exif=True)
+    # TODO would be a lot better to parse jpg applications
+    try:
+        dng = DNG(path, offset=12, exif=True)
+    except:
+        dng = DNG(path, offset=30, exif=True)
+    return dng
 
 if __name__ == '__main__':
     # from pprint import pprint
