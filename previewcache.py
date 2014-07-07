@@ -149,30 +149,33 @@ def build_preview(origpath, preview, thumbnail):
     ext = splitext(origpath)[1].lower()
     IMG = {'.dng': DNG, '.jpg': JPG, '.jpeg': JPG}[ext]
 
-    with open(preview, "w") as out, IMG(origpath) as img:
-        try:
+    try:
+        with open(preview, "w") as out, IMG(origpath) as img:
             if thumbnail:
                 out.write(img.read_jpeg_preview(0))  # The smallest available
             else:
                 out.write(img.read_jpeg_preview(-1))  # The largest available
             orientation = img.Orientation
-        except:
-            os.unlink(preview)
-            raise
 
-        # XBMC no interpreta el exif del tif. Sacamos el JPEG embebido
+            # XBMC no interpreta el exif del tif. Sacamos el JPEG embebido
 
-        # Commented out because for some reason it is failing in the rspbrry pi
-        # try:
-        #     subprocess.call(
-        #         ["exiv2", preview,
-        #          "-Mset Exif.Image.Orientation %s" % orientation],
-        #         stderr=FNULL)
-        # except:
-        #     logging.debug("Unable to set Orientation information")
+            # Commented out because for some reason it is failing
+            # in the rspbrry pi
+            # try:
+            #     subprocess.call(
+            #         ["exiv2", preview,
+            #          "-Mset Exif.Image.Orientation %s" % orientation],
+            #         stderr=FNULL)
+            # except:
+            #     logging.debug("Unable to set Orientation information")
 
-        logging.debug("Built %s preview" % preview)
-        return (preview, orientation)
+            logging.debug("Built %s preview" % preview)
+            return (preview, orientation)
+    except:
+        os.unlink(preview)
+        raise
+
+
 
 
 orientations = None
