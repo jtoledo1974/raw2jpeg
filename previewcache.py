@@ -175,9 +175,6 @@ def build_preview(origpath, preview, thumbnail):
         os.unlink(preview)
         raise
 
-
-
-
 orientations = None
 blacklist = None
 set_thumbdir(PREVIEWDIR)

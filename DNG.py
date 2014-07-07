@@ -358,7 +358,8 @@ class DNG:
 
     def get_previews(self):
         return [i for i in self.get_images()
-                if self.exif or i.SubFileType == 1]
+                if self.exif
+                or hasattr(i, 'SubFileType') and i.SubFileType == 1]
 
     def get_jpeg_previews(self):
         return [i for i in self.get_previews()
