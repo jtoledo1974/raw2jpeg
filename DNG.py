@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from struct import unpack
-from pprint import pformat
 
 
 class Logging:
@@ -38,6 +37,7 @@ class Logging:
             try:
                 value = getattr(obj, attr_name)
                 if type(value) in (list, dict):
+                    from pprint import pformat
                     res += pformat(value)
                 else:
                     res += str(value)
@@ -379,6 +379,10 @@ class DNG:
             logging.error("No jpeg preview in %s" % self.f.name)
             raise IOError
 
+    def dump(self):
+        for i in self.get_images():
+            print i.dump()
+
     def __getattr__(self, attr):
         if attr == 'Orientation':
             try:
@@ -398,17 +402,20 @@ def JPG(path):
     return dng
 
 if __name__ == '__main__':
-    # from pprint import pprint
+    import argparse
+    from os.path import splitext
 
-    jpg = JPG("test5.jpg")
-    for p in jpg.get_images():
-        print p.offset
-        print p.dump()
-        print "Orientation %d" % jpg.Orientation
-    # print [str(j.dump()) for j in jpg.get_jpeg_previews()]
-    f = open("thumb.jpg", "w+b")
-    f.write(jpg.read_jpeg_preview())
-    # with DNG("test2.dng") as dng:
-    #     print "\n".join([str(i) for i in dng.get_jpeg_previews()])
-    #     # print dng.get_jpeg_previews()[-1].StripByteCounts
-    print "hola"
+    parser = argparse.ArgumentParser(description="Parse jpg, dng and rw2 files")
+    parser.add_argument("file", help="The image file to be parsed")
+    args = parser.parse_args()
+
+    ext = splitext(args.file)[1].lower()
+
+    if ext in ['.dng', '.rw2']:
+        img = DNG(args.file)
+    elif ext in ['.jpg', '.jpeg']:
+        img = JPG(args.file)
+    else:
+        logging.error("Unrecognized extension for file %s" % args.file)
+
+    img.dump()
