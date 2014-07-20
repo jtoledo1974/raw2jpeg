@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from os.path import join, getmtime, dirname, basename, splitext
+from os.path import join, getmtime, dirname, basename
 import os
 import zlib
 import errno
@@ -8,7 +8,7 @@ import subprocess
 import json
 import tempfile
 
-from DNG import DNG, JPG, logging
+from DNG import Preview, logging
 
 PREVIEWDIR = "/tmp/.previewcache"
 FNULL = open(os.devnull, 'w')  # Se usa para redirigir a /dev/null
@@ -150,11 +150,9 @@ def build_preview(origpath, preview, thumbnail):
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
-    ext = splitext(origpath)[1].lower()
-    IMG = {'.dng': DNG, '.jpg': JPG, '.jpeg': JPG}[ext]
 
     try:
-        with open(preview, "w") as out, IMG(origpath) as img:
+        with open(preview, "w") as out, Preview(origpath) as img:
             if thumbnail:
                 out.write(img.read_jpeg_preview(0))  # The smallest available
             else:
