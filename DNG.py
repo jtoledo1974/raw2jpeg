@@ -57,7 +57,9 @@ class Tag:
     SHORT = 3
     LONG = 4
     RATIONAL = 5
+    UNDEFINED = 7
 
+    PreviewImage = 46  # Specific tag for Panasonic RW2 files
     SubFileType = 254
     ImageWidth = 256
     ImageLength = 257
@@ -86,7 +88,7 @@ class Tag:
     PixelXDimension = 40962
     PixelYDimension = 40963
 
-    type_lengths = {BYTE: 1, ASCII: 1, SHORT: 2, LONG: 4, RATIONAL: 8}
+    type_lengths = {BYTE: 1, ASCII: 1, SHORT: 2, LONG: 4, RATIONAL: 8, UNDEFINED: 1}
 
     def tag_name(self):
         try:
@@ -105,7 +107,8 @@ class Tag:
             self.ASCII: file.read_ascii,
             self.SHORT: file.read_short,
             self.LONG: file.read_long,
-            self.RATIONAL: file.read_rational
+            self.RATIONAL: file.read_rational,
+            self.UNDEFINED: file.read_ascii
         }
 
     def unsupported(self, c=0):
@@ -123,7 +126,7 @@ class Tag:
         readf = self.read_function[self.type]
 
         try:
-            if self.count == 1 or self.type == self.ASCII:
+            if self.count == 1 or self.type in (self.ASCII, self.UNDEFINED):
                 self.value = readf(self.count)
                 return
 
@@ -294,8 +297,8 @@ class DNG:
         endian = self.f.read(2)
         self.set_endian(endian)
         magic = self.read_short()
-        if magic != 42:
-            print magic
+        if magic not in (42, 85):  # Tiff/DNG, RW2
+            logging.error("Unrecognized magic number %d" % magic)
             self.wrong_format()
 
         self.first_ifdo = self.read_long()
