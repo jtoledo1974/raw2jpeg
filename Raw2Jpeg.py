@@ -55,7 +55,8 @@ class Blacklist():
 
 class Raw2Jpeg(Passthrough):
 
-    MASK = ".maskeddng.jpg"
+    MASK = ".maskedraw.jpg"
+    EXTS = ('.dng', '.rw2')
     FNULL = open(os.devnull, 'w')  # Se usa para redirigir a /dev/null
 
     # Paths that failed to create a thumbnail. Do not list them
@@ -66,11 +67,11 @@ class Raw2Jpeg(Passthrough):
 
     def _masked(self, path):
         """Devuelve el nombre falso"""
-        return path[:-4]+self.MASK if path[-4:].lower() == ".dng" else path
+        return path+self.MASK if path[-4:].lower() in self.EXTS else path
 
     def _original(self, path):
         """Devuelve el archivo original"""
-        return path[:-14]+".dng" if path[-14:] == self.MASK else path
+        return path[:-14] if path[-14:] == self.MASK else path
 
     def _ismasked(self, path):
         return path[-14:] == self.MASK
