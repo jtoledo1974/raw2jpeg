@@ -483,19 +483,16 @@ class Preview:
 
 if __name__ == '__main__':
     import argparse
-    from os.path import splitext
 
-    parser = argparse.ArgumentParser(description="Parse jpg, dng and rw2 files")
+    parser = argparse.ArgumentParser(
+        description="Parse jpg, dng and rw2 files")
     parser.add_argument("file", help="The image file to be parsed")
+    parser.add_argument("-d", "--dump", action='store_true',
+                        help="Dump all the IFDs")
     args = parser.parse_args()
 
-    ext = splitext(args.file)[1].lower()
-
-    if ext in ['.dng', '.rw2']:
-        img = DNG(args.file)
-    elif ext in ['.jpg', '.jpeg']:
-        img = JPG(args.file)
-    else:
-        logging.error("Unrecognized extension for file %s" % args.file)
-
-    img.dump()
+    preview = Preview(args.file)
+    if args.dump:
+        preview.dump()
+    preview.list()
+    print ("Orientation: %s" % preview.Orientation)
