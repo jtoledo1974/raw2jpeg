@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from struct import unpack
+from os.path import splitext
 
 
 class Logging:
@@ -125,6 +126,7 @@ class Tag:
         self.file.seek(self.value)
 
         readf = self.read_function[self.type]
+        self.offset = self.value
 
         try:
             if self.count == 1 or self.type in (self.ASCII, self.UNDEFINED):
@@ -418,13 +420,66 @@ class DNG:
             raise AttributeError
 
 
-def JPG(path):
+def JPG(path, offset=0):
     # TODO would be a lot better to parse jpg applications
     try:
-        dng = DNG(path, offset=12, exif=True)
+        dng = DNG(path, offset=offset+12, exif=True)
     except:
-        dng = DNG(path, offset=30, exif=True)
+        dng = DNG(path, offset=offset+30, exif=True)
     return dng
+
+
+class Preview:
+    def __init__(self, path=''):
+
+        ext = splitext(path)[1].lower()
+
+        if ext == '.dng':
+            img = DNG(path)
+        elif ext in ['.jpg', '.jpeg']:
+            img = JPG(path)
+        elif ext == ".rw2":
+            with DNG(path) as img:
+                ifd = img.get_first_image()
+                # TODO This is not elegant. The caller should not need to know
+                # about the entries dictionary
+                try:
+                    offset = ifd.entries['PreviewImage'].offset
+                except:
+                    # read_value hasn't been called yet and so the offset
+                    # property is not present
+                    offset = ifd.entries['PreviewImage'].value
+            img = JPG(path, offset=offset)
+        else:
+            raise NotImplementedError('Unknown extension %s' % ext)
+
+        self.img = img
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.img.close()
+
+    def list(self):
+        for ifd in self.get_jpeg_previews():
+            print str(ifd)
+
+    def dump(self):
+        self.img.dump()
+
+    def get_jpeg_previews(self):
+        return self.img.get_jpeg_previews()
+
+    def read_jpeg_preview(self, index=0):
+        return self.img.read_jpeg_preview(index)
+
+    def __getattr__(self, attr):
+        if attr == 'Orientation':
+            return self.img.Orientation
+        else:
+            raise AttributeError
+
 
 if __name__ == '__main__':
     import argparse
