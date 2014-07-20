@@ -88,7 +88,8 @@ class Tag:
     PixelXDimension = 40962
     PixelYDimension = 40963
 
-    type_lengths = {BYTE: 1, ASCII: 1, SHORT: 2, LONG: 4, RATIONAL: 8, UNDEFINED: 1}
+    type_lengths = {BYTE: 1, ASCII: 1, SHORT: 2, LONG: 4,
+                    RATIONAL: 8, UNDEFINED: 1}
 
     def tag_name(self):
         try:
@@ -196,10 +197,27 @@ class IFD(object):
             self.next = dng.read_long()
 
     def __getattr__(self, attr):
+        if attr == 'Width':
+            return self.ImageWidth if hasattr(self, 'ImageWidth') else -1
+        elif attr == 'Length':
+            return self.ImageLength if hasattr(self, 'ImageLength') else -1
+        elif attr == 'Size':
+            if hasattr(self, 'StripByteCounts'):
+                return self.StripByteCounts
+            elif hasattr(self, 'TileByteCounts'):
+                if type(self.TileByteCounts) == int:
+                    s = self.TileByteCounts
+                else:
+                    s = sum(self.TileByteCounts)
+            else:
+                s = -1
+            return s
+
         try:
             entry = self.entries[attr]
         except:
             raise AttributeError
+
         if entry.value_is_checked is True:
             return entry.value
         else:
@@ -212,17 +230,11 @@ class IFD(object):
             return entry.value
 
     def __str__(self):
-        w = self.ImageWidth
-        l = self.ImageLength
-        t = self.SubFileType
-        c = self.Compression
-        try:
-            s = self.StripByteCounts
-        except:
-            if type(self.TileByteCounts) == int:
-                s = self.TileByteCounts
-            else:
-                s = sum(self.TileByteCounts)
+        w = self.Width
+        l = self.Length
+        t = self.SubFileType if hasattr(self, 'SubFileType') else -1
+        c = self.Compression if hasattr(self, 'Compression') else -1
+        s = self.Size
         return "%dx%d, Type %d, compr: %d, size: %d" % (w, l, t, c, s)
 
     def dump(self):
