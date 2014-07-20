@@ -140,7 +140,11 @@ class Tag:
             return
 
     def __str__(self):
-        return "Tag %s: %s" % (self.tag_name(self.tag), self.value)
+        if self.type != self.UNDEFINED:
+            value = self.value
+        else:
+            value = ":".join("{:02x}".format(ord(c)) for c in self.value)
+        return "Tag %s: %s" % (self.tag_name(self.tag), value)
 
 Tag.tag_dict = {number: tag_name for tag_name, number
                 in Tag.__dict__.iteritems()
@@ -224,8 +228,14 @@ class IFD(object):
     def dump(self):
         res = "Offset: %d -> Next: %d\n" % (self.offset, self.next)
         for entry in self.entry_list:
+            tag = self.entries[entry]
             try:
-                res += "%s: %s\n" % (entry, str(getattr(self, entry))[:60])
+                value = str(getattr(self, entry))
+                if tag.type == tag.UNDEFINED:
+                    value = ":".join("{:02x}".format(ord(c)) for c in value)
+                if len(value) > 60:
+                    value = value[:60]+" ..."
+                res += "%s: %s\n" % (entry, value)
             except NotImplementedError:
                 pass
         return res
